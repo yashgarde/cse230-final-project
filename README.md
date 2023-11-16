@@ -1,8 +1,8 @@
 # CSE 230 Final Project - 2048 Game
 
 ## Team Members
-Yash Garde
-Shravan Konduru
+- Yash Garde
+- Shravan Konduru
 
 ## Proposal
 We are planning to build a working version of the popular game 2048 as TUI using the Haskell `brick` library. 
@@ -10,6 +10,8 @@ We are planning to build a working version of the popular game 2048 as TUI using
 The game is played on a 4x4 game board where the goal is to get the highest score possible. The players score is determined by the largest numbered tile that is present on the board at any time. To increase their score, the player must slide the numbered tiles (using the arrow-keys) to allow tiles with the same number to merge together. 
 
 Each tile value is a power of 2 starting at 2 and can go as high as 2<sup>17</sup> and a new low values tile is added to the board with each move that is made.
+
+![2048](assets/2048.jpg)
 
 ## Proposed Features
 ### Game Board
