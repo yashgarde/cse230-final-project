@@ -1,6 +1,10 @@
-module Main (main) where
+module Main where
 
-import Lib
+import Graphics.Vty
+import Brick
+import Brick.Widgets.Center
+import Brick.Widgets.Border
+import Brick.Widgets.Border.Style
 
 main :: IO ()
-main = someFunc
+main = putStrLn "Hello, Haskell!"
