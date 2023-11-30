@@ -14,7 +14,7 @@ game :: IO ()
 game = do
     initState <- buildInitState
     finalState <- defaultMain gameApp initState
-    print finalState
+    print "game finished"
 
 
 data GameState =
@@ -44,6 +44,7 @@ buildInitState :: IO GameState
 buildInitState = return GameState {board = [[]]}
 
 drawGame :: GameState -> [Widget ResName]
+-- TODO: draw the state into a board
 drawGame state = []
 
 
@@ -52,5 +53,6 @@ handleGameEvent e =
         VtyEvent vte ->
             case vte of
                 EvKey (KChar 'q') [] -> halt
+
                 _ -> continueWithoutRedraw
         _ -> continueWithoutRedraw
