@@ -10,9 +10,7 @@ import Brick.Widgets.Center
 import Brick.Widgets.Border.Style (unicodeRounded)
 
 import Data.List (transpose)
-
-import Control.Monad (void)
-import Control.Monad.State (get, put, modify)
+import Control.Monad.State
 
 -- import Lens.Micro (_1)
 -- import Lens.Micro.Mtl (use, (.=))
@@ -60,7 +58,7 @@ drawBoardRow :: [Int] -> Widget ResName
 drawBoardRow row = hBox $ map drawCell row
 
 drawCell :: Int -> Widget ResName
-drawCell val = 
+drawCell val =
     let cellDisp = if val == 0 then " " else show val in
     hLimit 10 $ withBorderStyle unicodeRounded $ border $ hCenter $ padAll 1 $ str cellDisp
 
@@ -78,17 +76,15 @@ moveNumsToBottom board =
 
 
 -- keyPress :: Char -> EventM n2 s ()
-keyPress 'd' = do
-    old_state <- get
-    let new_state = GameState {board = (moveNumsToBottom (board old_state)), score = 0}
-    put new_state
+keyPress :: Char -> GameState -> GameState
+keyPress 'd' g = GameState {board = moveNumsToBottom (board g), score = 0}
 
-handleGameEvent :: BrickEvent n1 e -> EventM n2 s ()
+handleGameEvent :: BrickEvent ResName e -> EventM ResName GameState ()
 handleGameEvent e =
     case e of
         VtyEvent vte ->
             case vte of
                 EvKey (KChar 'q') [] -> halt
-                EvKey (KChar 'd') [] -> keyPress 'd'
+                EvKey (KChar 'd') [] -> modify $ keyPress 'd'
                 _ -> continueWithoutRedraw
         _ -> continueWithoutRedraw
