@@ -9,6 +9,14 @@ import Brick.Widgets.Border
 import Brick.Widgets.Center
 import Brick.Widgets.Border.Style (unicodeRounded)
 
+import Data.List (transpose)
+
+import Control.Monad (void)
+import Control.Monad.State (get, put, modify)
+
+-- import Lens.Micro (_1)
+-- import Lens.Micro.Mtl (use, (.=))
+
 game :: IO ()
 game = do
     initState <- buildInitState
@@ -56,11 +64,31 @@ drawCell val =
     let cellDisp = if val == 0 then " " else show val in
     hLimit 10 $ withBorderStyle unicodeRounded $ border $ hCenter $ padAll 1 $ str cellDisp
 
+-- also add the random cell onto the board
+
+
+countZeros :: (Num a, Eq a) => [a] -> Int
+countZeros = length . filter (== 0)
+
+moveNumsToBottom :: [[Int]] -> [[Int]]
+moveNumsToBottom board =
+  let moveColumnToBottom col = replicate (length col - countZeros col) 0 ++ filter (/= 0) col
+      transposedGrid = transpose board
+  in transpose (map moveColumnToBottom transposedGrid)
+
+
+-- keyPress :: Char -> EventM n2 s ()
+keyPress 'd' = do
+    old_state <- get
+    let new_state = GameState {board = (moveNumsToBottom (board old_state)), score = 0}
+    put new_state
+
 handleGameEvent :: BrickEvent n1 e -> EventM n2 s ()
 handleGameEvent e =
     case e of
         VtyEvent vte ->
             case vte of
                 EvKey (KChar 'q') [] -> halt
+                EvKey (KChar 'd') [] -> keyPress 'd'
                 _ -> continueWithoutRedraw
         _ -> continueWithoutRedraw
