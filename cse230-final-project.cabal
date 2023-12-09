@@ -34,7 +34,7 @@ library
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>=4.17.2.0, brick, vty, mtl
+    build-depends:    base ^>=4.17.2.0, brick, vty, mtl, random
     ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
     hs-source-dirs:   src
     default-language: Haskell2010
