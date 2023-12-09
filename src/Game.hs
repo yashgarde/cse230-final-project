@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 
-module Game where
+module Game (game) where
 
 import Graphics.Vty
 import Brick
