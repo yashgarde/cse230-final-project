@@ -49,18 +49,18 @@ gameApp =
 
 -- UI drawing functions
 buildInitState :: IO GameState
-buildInitState = do 
-    let (randomBoard, _) = generateRandomBoard (unsafePerformIO getStdGen)
+buildInitState = do
+    let randomBoard = generateRandomBoard (unsafePerformIO getStdGen)
     return GameState {board = randomBoard, score = 0, currentState = "startSplash", bombs = 2}
 
-generateRandomBoard :: StdGen -> ([[Int]], StdGen)
+generateRandomBoard :: StdGen -> [[Int]]
 generateRandomBoard gen = do
-    let (randomIndices, newSeed) = randomR (0, 15) gen :: (Int, StdGen)
-        possibleIndices = [0..15]
-        selectedIndices = take 2 $ nub randomIndices
-        boardVals = map (\x -> if x `elem` selectedIndices then 2 else 0) possibleIndices
-        finalBoard = [take 4 boardVals, take 4 $ drop 4 boardVals, take 4 $ drop 8 boardVals, take 4 $ drop 12 boardVals]
-    (finalBoard, newSeed)
+                          let randomIndices = randomRs (0, 15) gen :: [Int]
+                              possibleIndices = [0..15]
+                              selectedIndices = take 2 $ nub randomIndices
+                              boardVals = map (\x -> if x `elem` selectedIndices then 2 else 0) possibleIndices
+                              finalBoard = [take 4 boardVals, take 4 $ drop 4 boardVals, take 4 $ drop 8 boardVals, take 4 $ drop 12 boardVals]
+                          finalBoard
 
 
 
@@ -86,7 +86,10 @@ gameOverBlock state = [hCenter $ str "GAME OVER!", hCenter $ str $ "Final Score:
 
 drawBoard :: GameState -> [Widget ResName]
 drawBoard state = [
-    withBorderStyle unicodeRounded $ borderWithLabel (str "2048") $ (vBox $ map (hCenter . drawBoardRow) (board state)) <=> (padTop (Pad 1) $ hCenter $ str $ "Current Score: " ++ show (score state))
+    hCenter $ vLimit 100 $ hLimit 50 $ withBorderStyle unicodeRounded $ borderWithLabel (str "2048") $
+        vBox (map (hCenter . drawBoardRow) (board state)) <=>
+        padTopBottom 1 (hCenter $ str $ "Bombs left: " ++ show (bombs state)) <=>
+        padTop (Pad 2) (hCenter $ str $ "CURRENT SCORE: " ++ show (score state))
     ]
 
 drawBoardRow :: [Int] -> Widget ResName
@@ -121,7 +124,8 @@ moveNumsToBottom gameBoard =
 keyPress :: Char -> GameState -> GameState
 keyPress 'd' g = GameState {board = moveNumsToBottom (board g), score = 0, currentState = currentState g, bombs = bombs g}
 keyPress 's' g = if currentState g == "startSplash" then GameState {board = board g, score = score g, currentState = "game", bombs = bombs g} else g
-keyPress 'r' g = let (newBoard, newGen) = generateRandomBoard (unsafePerformIO getStdGen) in
+-- Currently only generates a new random board on the first reset but the same board from there on out
+keyPress 'r' g = let newBoard = generateRandomBoard (unsafePerformIO newStdGen) in
     GameState {board = newBoard, score = 0, currentState = "game", bombs = bombs g}
 -- FOR TESTING PURPOSES ONLY
 keyPress 'g' g = GameState {board = board g, score = score g, currentState = "gameOver", bombs = bombs g}
