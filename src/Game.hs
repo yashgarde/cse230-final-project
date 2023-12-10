@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Eta reduce" #-}
+{-# HLINT ignore "Use all" #-}
 
 
 module Game (game) where
@@ -15,6 +16,12 @@ import Data.List (transpose, nub)
 import System.Random
 import GHC.IO (unsafePerformIO)
 
+
+emptyBoard :: [[Int]]
+emptyBoard = [[0, 0, 0, 0],
+              [0, 0, 0, 0],
+              [0, 0, 0, 0],
+              [0, 0, 0, 0]]
 
 game :: IO ()
 game = do
@@ -76,7 +83,8 @@ drawGame state = case currentState state of
 
 drawStartSplash :: GameState -> [Widget ResName]
 drawStartSplash _ = [
-    hCenter $ vLimit 40 $ hLimit 40 $ withBorderStyle unicodeBold $ borderWithLabel (str "Welcome to 2048+") $ padTop (Pad 1) (hCenter $ str "Press the \"S\" key to start")
+    hCenter $ vLimit 40 $ hLimit 40 $ withBorderStyle unicodeBold $ borderWithLabel (str "Welcome to 2048+") 
+    $ padTop (Pad 1) (hCenter $ str "Press the \"S\" key to start")
     ]
 
 drawGameOver :: GameState -> [Widget ResName]
@@ -85,7 +93,8 @@ drawGameOver state = [
     ]
 
 gameOverBlock :: GameState -> [Widget ResName]
-gameOverBlock state = [hCenter $ str "GAME OVER!", hCenter $ str $ "Final Score: " ++ show (score state), hCenter $ str "Press the \"R\" key to restart", padTop (Pad 2) $ hCenter $ str "Press the \"Q\" key to quit"]
+gameOverBlock state = [hCenter $ str "GAME OVER!", hCenter $ str $ "Final Score: " ++ show (score state), hCenter 
+                        $ str "Press the \"R\" key to restart", padTop (Pad 2) $ hCenter $ str "Press the \"Q\" key to quit"]
 
 drawBombsPage :: GameState -> [Widget ResName]
 drawBombsPage state = [
@@ -93,7 +102,8 @@ drawBombsPage state = [
     ]
 
 bombUseBlock :: GameState -> [Widget ResName]
-bombUseBlock state = [hCenter $ str $ "You have " ++ show (bombs state) ++ " bombs left", hCenter $ str $ "Please enter a number (upto 32) that you wish to clear and press Enter: \n" ++ bombsInput state, 
+bombUseBlock state = [hCenter $ str $ "You have " ++ show (bombs state) ++ " bombs left", 
+                        hCenter $ str $ "Please enter a number (upto 32) that you wish to clear and press Enter: " ++ bombsInput state, 
                         hCenter $ str "Press ESC to return to the game"]
 
 
@@ -130,11 +140,18 @@ moveNumsToBottom gameBoard =
       transposedGrid = transpose gameBoard
   in transpose (map moveColumnToBottom transposedGrid)
 
+
+
+
+
+
 -- TODO: Add checks to ensure the board is not completely emptied out
-removeFromBoard :: (Eq p, Num p) => p -> [[p]] -> [[p]]
+removeFromBoard :: Int -> [[Int]] -> ([[Int]], Bool)
 removeFromBoard n gameBoard = 
     let removeCellFromBoard row = map (\x -> if x == n then 0 else x) row
-    in map removeCellFromBoard gameBoard
+        bombedBoard = map removeCellFromBoard gameBoard
+        isEmpty = bombedBoard == emptyBoard
+    in if isEmpty then (gameBoard, isEmpty) else (bombedBoard, isEmpty)
 
 
 -- Event handling function: TODO: clean this up to use case or better pattern matching
@@ -149,10 +166,16 @@ keyPress 'r' g = let newBoard = generateRandomBoard (unsafePerformIO newStdGen) 
 keyPress 'g' g = GameState {board = board g, score = score g, currentState = "gameOver", bombs = bombs g, bombsInput = bombsInput g}
 
 -- TODO: Possible bomb feature with a Dialog or a Brick Form
-keyPress 'b' g = if currentState g == "game" then GameState {board = board g, score = score g, currentState = "bombsPage", bombs = bombs g, bombsInput = bombsInput g} else g
+keyPress 'b' g = if currentState g == "game" then 
+                    GameState {board = board g, score = score g, currentState = "bombsPage", bombs = bombs g, bombsInput = bombsInput g} else g
+
 keyPress 'e' g = if currentState g == "bombsPage" then GameState {board = board g, score = score g, currentState = "game", bombs = bombs g, bombsInput = ""} else g
-keyPress 'n' g = if currentState g == "bombsPage" && (read (bombsInput g) :: Int) <= 32 then 
-                    GameState {board = removeFromBoard (read $ bombsInput g) (board g), score = score g, currentState = "game", bombs = bombs g - 1, bombsInput = ""} else g
+
+keyPress 'n' g = let (bombedBoard, isEmpty) = removeFromBoard (read $ bombsInput g) (board g) in
+                    if currentState g == "bombsPage" && (read (bombsInput g) :: Int) <= 32 && not isEmpty then 
+                        GameState {board = bombedBoard , score = score g, currentState = "game", bombs = bombs g - 1, bombsInput = ""} 
+                        else GameState {board = bombedBoard , score = score g, currentState = "game", bombs = bombs g, bombsInput = ""}
+
 keyPress key g
     | currentState g == "bombsPage" && key `elem` ['0'..'9'] = GameState {board = board g, score = score g, currentState = "bombsPage", bombs = bombs g, bombsInput = bombsInput g ++ [key]}
     | otherwise = g
