@@ -74,6 +74,13 @@ generateRandomBoard gen = do
                               finalBoard = [take 4 boardVals, take 4 $ drop 4 boardVals, take 4 $ drop 8 boardVals, take 4 $ drop 12 boardVals]
                           finalBoard
 
+generateRandomTile :: StdGen -> Int
+generateRandomTile gen = do
+                          let vals = randomRs (0, 9) gen :: [Int]
+                              selectedVal = take 1 $ nub vals
+                              v = if selectedVal!!0 == 9 then 4 else 2
+                          v
+
 
 
 drawGame :: GameState -> [Widget ResName]
@@ -188,21 +195,32 @@ shiftRight board = (reverseRows b, score)
       (b, score) = mergeRows (shiftRows (reverseRows board))
 
 
+
+-- try out newStdGen and getStdGen. Check to see if there is a difference
 -- add the new random tile value to the score? - i dont think so
 
 -- work in progress: generating random tile
 -- randNum = randomIO :: IO Int
 
--- addTile :: [[Int]] -> [[Int]]
--- addTile board = board
+addTile :: [[Int]] -> [[Int]]
+addTile board = board
+  -- where
+  --   tileVal = newTileVal
 
 -- randomNums :: Int -> [Double]
 -- randomNums seed = randoms (mkStdGen seed) :: [Double]
 
 -- newTileVal :: Int
--- newTileVal = if d > .9 then 4 else 2
---     where
---       d = (take 1 randomNums 10)!!0
+-- newTileVal = generateRandomTile (unsafePerformIO getStdGen)
+
+-- generateRandomBoard :: StdGen -> [[Int]]
+-- generateRandomBoard gen = do
+--                           let randomIndices = randomRs (0, 15) gen :: [Int]
+--                               possibleIndices = [0..15]
+--                               selectedIndices = take 2 $ nub randomIndices
+--                               boardVals = map (\x -> if x `elem` selectedIndices then 2 else 0) possibleIndices
+--                               finalBoard = [take 4 boardVals, take 4 $ drop 4 boardVals, take 4 $ drop 8 boardVals, take 4 $ drop 12 boardVals]
+--                           finalBoard
 
 -- TODO: Add checks to ensure the board is not completely emptied out
 removeFromBoard :: Int -> [[Int]] -> ([[Int]], Bool)
