@@ -15,6 +15,8 @@ import Brick.Widgets.Border.Style (unicodeRounded, unicodeBold)
 import Data.List (transpose, nub)
 import System.Random
 import GHC.IO (unsafePerformIO)
+import System.Random
+
 
 
 emptyBoard :: [[Int]]
@@ -106,6 +108,7 @@ bombUseBlock state = [hCenter $ str $ "You have " ++ show (bombs state) ++ " bom
                         hCenter $ str $ "Please enter a number (upto 32) that you wish to clear and press Enter: " ++ bombsInput state, 
                         hCenter $ str "Press ESC to return to the game"]
 
+-- TODO: display score on board
 
 drawBoard :: GameState -> [Widget ResName]
 drawBoard state = [
@@ -131,19 +134,75 @@ drawCell val =
 -- also add the random cell onto the board
 
 
-countZeros :: (Num a, Eq a) => [a] -> Int
-countZeros = length . filter (== 0)
+shiftRows :: [[Int]] -> [[Int]]
+shiftRows board = map shiftRow board
+  where
+      shiftRow :: [Int] -> [Int]
+      shiftRow row = (filter (/= 0) row) ++ (replicate (numZeros row) 0)
+        where
+          numZeros :: [Int] -> Int
+          numZeros r = length (filter (== 0) r)
 
-moveNumsToBottom :: [[Int]] -> [[Int]]
-moveNumsToBottom gameBoard =
-  let moveColumnToBottom col = replicate (length col - countZeros col) 0 ++ filter (/= 0) col
-      transposedGrid = transpose gameBoard
-  in transpose (map moveColumnToBottom transposedGrid)
+reverseRows :: [[Int]] -> [[Int]]
+reverseRows = map reverse
+
+listSum :: [Int] -> Int
+listSum [] = 0
+listSum (x:xs) = x + (listSum xs)
 
 
+-- merging should be directional as well
+mergeRows :: [[Int]] -> ([[Int]], Int)
+mergeRows board = (newBoard, score)
+  where
+    mergeRow :: Int -> [Int] -> ([Int], Int)
+    mergeRow 0 _ = ([], 0)
+    mergeRow n [] = (replicate n 0, 0)
+    mergeRow n [x] = ([x] ++ (replicate (n - 1) 0), 0)
+    mergeRow n (x:y:xs) 
+      | x == y = ((x + y) : eq_b, x + y + eq_s)
+      | otherwise = (x : neq_b, neq_s)
+        where
+          (eq_b, eq_s) = (mergeRow (n - 1) xs)
+          (neq_b, neq_s) = (mergeRow (n - 1) (y:xs))
+    mergedOutput = (map (mergeRow 4) board)
+    score = listSum (map snd mergedOutput)
+    newBoard = (map fst mergedOutput)
+
+shiftDown :: [[Int]] -> ([[Int]], Int)
+shiftDown board = (transpose (reverseRows b), score)
+    where
+      (b, score) = mergeRows (shiftRows (reverseRows (transpose board)))
+
+shiftUp :: [[Int]] -> ([[Int]], Int)
+shiftUp board = (transpose b, score)
+    where
+      (b, score) = mergeRows (shiftRows (transpose board))
+
+shiftLeft :: [[Int]] -> ([[Int]], Int)
+shiftLeft board = mergeRows (shiftRows board)
+
+shiftRight :: [[Int]] -> ([[Int]], Int)
+shiftRight board = (reverseRows b, score)
+    where
+      (b, score) = mergeRows (shiftRows (reverseRows board))
 
 
+-- add the new random tile value to the score? - i dont think so
 
+-- work in progress: generating random tile
+-- randNum = randomIO :: IO Int
+
+-- addTile :: [[Int]] -> [[Int]]
+-- addTile board = board
+
+-- randomNums :: Int -> [Double]
+-- randomNums seed = randoms (mkStdGen seed) :: [Double]
+
+-- newTileVal :: Int
+-- newTileVal = if d > .9 then 4 else 2
+--     where
+--       d = (take 1 randomNums 10)!!0
 
 -- TODO: Add checks to ensure the board is not completely emptied out
 removeFromBoard :: Int -> [[Int]] -> ([[Int]], Bool)
@@ -156,7 +215,23 @@ removeFromBoard n gameBoard =
 
 -- Event handling function: TODO: clean this up to use case or better pattern matching
 keyPress :: Char -> GameState -> GameState
-keyPress 'd' g = GameState {board = moveNumsToBottom (board g), score = 0, currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g}
+keyPress 'x' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g}
+    where
+      (b, s) = shiftDown (board g)
+      newB = addTile b
+keyPress 'd' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g}
+    where
+      (b, s) = shiftUp (board g)
+      newB = addTile b
+keyPress 'z' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g}
+    where
+      (b, s) = shiftLeft (board g)
+      newB = addTile b
+keyPress 'c' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g}
+    where
+      (b, s) = shiftRight (board g)
+      newB = addTile b
+
 keyPress 's' g = if currentState g == "startSplash" then GameState {board = board g, score = score g, currentState = "game", bombs = bombs g, bombsInput = bombsInput g} else g
 -- Currently only generates a new random board on the first reset but the same board from there on out
 keyPress 'r' g = let newBoard = generateRandomBoard (unsafePerformIO newStdGen) in
@@ -193,6 +268,9 @@ handleGameEvent e =
                 EvKey (KChar 's') [] -> modify $ keyPress 's'
                 EvKey (KChar 'r') [] -> modify $ keyPress 'r'
                 EvKey (KChar 'g') [] -> modify $ keyPress 'g'
+                EvKey (KChar 'x') [] -> modify $ keyPress 'x'
+                EvKey (KChar 'z') [] -> modify $ keyPress 'z'
+                EvKey (KChar 'c') [] -> modify $ keyPress 'c'
 
                 -- Bomb events
                 EvKey (KChar 'b') [] -> modify $ keyPress 'b'
