@@ -27,9 +27,10 @@ emptyBoard = [[0, 0, 0, 0],
 
 game :: IO ()
 game = do
-    initState <- buildInitState
+    num <- randomIO
+    initState <- buildInitState num
     finalState <- defaultMain gameApp initState
-    print finalState
+    print "game over"
 
 
 data GameState =
@@ -38,7 +39,8 @@ data GameState =
         score :: Int,
         currentState :: String,
         bombs :: Int,
-        bombsInput :: String
+        bombsInput :: String,
+        randNums :: [Double]
     }
     deriving (Show, Eq)
 
@@ -60,25 +62,25 @@ gameApp =
 
 
 -- UI drawing functions
-buildInitState :: IO GameState
-buildInitState = do
-    let randomBoard = generateRandomBoard (unsafePerformIO getStdGen)
-    return GameState {board = randomBoard, score = 0, currentState = "startSplash", bombs = 2, bombsInput = ""}
+buildInitState :: Int -> IO GameState
+buildInitState seed = do
+    let randNums = randoms (mkStdGen seed)
+    let vals = take 2 randNums
+    let randomBoard = generateRandomBoard vals
+    return GameState {board = randomBoard, score = 0, currentState = "startSplash", bombs = 2, bombsInput = "", randNums = (drop 2 randNums)}
 
-generateRandomBoard :: StdGen -> [[Int]]
-generateRandomBoard gen = do
-                          let randomIndices = randomRs (0, 15) gen :: [Int]
-                              possibleIndices = [0..15]
-                              selectedIndices = take 2 $ nub randomIndices
-                              boardVals = map (\x -> if x `elem` selectedIndices then 2 else 0) possibleIndices
+generateRandomBoard :: [Double] -> [[Int]]
+generateRandomBoard selectedIndices = do
+                          let possibleIndices = [0..15]
+                              vals = (map (\x -> ((floor (x * 16)) :: Int)) selectedIndices)
+                              boardVals = map (\x -> if x `elem` vals then 2 else 0) possibleIndices
                               finalBoard = [take 4 boardVals, take 4 $ drop 4 boardVals, take 4 $ drop 8 boardVals, take 4 $ drop 12 boardVals]
                           finalBoard
 
-generateRandomTile :: StdGen -> Int
-generateRandomTile gen = do
-                          let vals = randomRs (0, 9) gen :: [Int]
-                              selectedVal = take 1 $ nub vals
-                              v = if selectedVal!!0 == 9 then 4 else 2
+generateRandomTile :: [Double] -> Int
+generateRandomTile vals = do
+                          let val = vals!!0
+                              v = if val >= 0.9 then 4 else 2
                           v
 
 
@@ -140,15 +142,14 @@ drawCell val =
 
 -- also add the random cell onto the board
 
+numZeros :: [Int] -> Int
+numZeros r = length (filter (== 0) r)
 
 shiftRows :: [[Int]] -> [[Int]]
 shiftRows board = map shiftRow board
   where
       shiftRow :: [Int] -> [Int]
       shiftRow row = (filter (/= 0) row) ++ (replicate (numZeros row) 0)
-        where
-          numZeros :: [Int] -> Int
-          numZeros r = length (filter (== 0) r)
 
 reverseRows :: [[Int]] -> [[Int]]
 reverseRows = map reverse
@@ -202,25 +203,81 @@ shiftRight board = (reverseRows b, score)
 -- work in progress: generating random tile
 -- randNum = randomIO :: IO Int
 
-addTile :: [[Int]] -> [[Int]]
-addTile board = board
-  -- where
-  --   tileVal = newTileVal
+
+flatten :: [[Int]] -> [Int]
+flatten board = foldr (++) [] board
+
+zeroIndices :: [Int] -> [Int]
+zeroIndices b = helper b 0
+    where
+      helper [] _ = []
+      helper (x:xs) num = if x == 0 then num : (helper xs (num + 1)) else (helper xs (num + 1))
+
+generateRandomTileLoc :: [Int] -> [Double] -> Int
+generateRandomTileLoc indices vals = helper indices val
+    where
+      val = (floor ((vals!!0) * (fromIntegral (length indices)))) :: Int
+      helper [] _ = 0
+      helper (x:xs) 0 = x
+      helper (x:xs) n = helper xs (n-1)
+
+
+addTile :: [[Int]] -> [Double] -> [[Int]]
+addTile board rNums = finalBoard
+  where
+    tileVal = generateRandomTile (take 1 rNums)
+    -- tileVal = 2
+    -- tileLocation = generateRandomTileLoc (unsafePerformIO newStdGen) board
+    tileLocation = generateRandomTileLoc (flatten board) (take 1 (drop 1 rNums))
+    -- finalBoard = insertTile board tileLocation tileVal 
+    finalBoard = insertTile board tileLocation tileVal
 
 -- randomNums :: Int -> [Double]
 -- randomNums seed = randoms (mkStdGen seed) :: [Double]
 
--- newTileVal :: Int
--- newTileVal = generateRandomTile (unsafePerformIO getStdGen)
 
--- generateRandomBoard :: StdGen -> [[Int]]
--- generateRandomBoard gen = do
---                           let randomIndices = randomRs (0, 15) gen :: [Int]
---                               possibleIndices = [0..15]
---                               selectedIndices = take 2 $ nub randomIndices
---                               boardVals = map (\x -> if x `elem` selectedIndices then 2 else 0) possibleIndices
---                               finalBoard = [take 4 boardVals, take 4 $ drop 4 boardVals, take 4 $ drop 8 boardVals, take 4 $ drop 12 boardVals]
---                           finalBoard
+-- generateRandomTileLoc :: StdGen -> [[Int]] -> Int
+-- generateRandomTileLoc gen board = do
+--                           let openSpots = numOpenSpots board
+--                               randomIndices = randomRs (1, numOpenSpots board) gen :: [Int]
+--                               selectedLocation = (take 1 $ nub randomIndices)!!0 
+--                           selectedLocation
+
+-- insertTile :: [[Int]] -> Int -> Int -> [[Int]]
+-- insertTile board loc val = [first_r, second_r, third_r, fourth_r]
+--     where
+--       helper :: [Int] -> Int -> [Int]
+--       helper row n 
+--         | n < 0 = row
+--       helper row 0 = row
+--       helper [] _ = []
+--       helper (r:rest) 1 = if r == 0 then val : (helper rest 0) else (helper rest 1)
+--       helper (r:rest) loc = if r == 0 then r : (helper rest (loc - 1)) else r : (helper rest loc)
+--       helper [] loc = []
+--       first_r = helper (board!!0) loc
+--       second_r = helper (board!!1) (loc - (numZeros first_r))
+--       third_r = helper (board!!2) (loc - (numZeros (first_r ++ second_r)))
+--       fourth_r = helper (board!!3) (loc - (numZeros (first_r ++ second_r ++ third_r)))
+
+insertTile :: [[Int]] -> Int -> Int -> [[Int]]
+insertTile board loc val = [take 4 boardVals, take 4 $ drop 4 boardVals, take 4 $ drop 8 boardVals, take 4 $ drop 12 boardVals]
+    where
+      helper [] _ = []
+      helper (x:xs) 0 = val : xs
+      helper (x:xs) n = x : (helper xs (n - 1))
+      boardVals = helper (flatten board) loc
+  
+  
+  -- do
+  --                         let possibleIndices = [0..15]
+  --                             vals = (map (\x -> ((floor (x * 16)) :: Int)) selectedIndices)
+  --                             boardVals = map (\x -> if x `elem` vals then 2 else 0) possibleIndices
+  --                             finalBoard = [take 4 boardVals, take 4 $ drop 4 boardVals, take 4 $ drop 8 boardVals, take 4 $ drop 12 boardVals]
+  --                         finalBoard
+
+numOpenSpots :: [[Int]] -> Int
+-- numOpenSpots board = map (foldr + 0) (map (filter (== 0)) board)
+numOpenSpots board = numZeros (flatten board)
 
 -- TODO: Add checks to ensure the board is not completely emptied out
 removeFromBoard :: Int -> [[Int]] -> ([[Int]], Bool)
@@ -231,46 +288,57 @@ removeFromBoard n gameBoard =
     in if isEmpty then (gameBoard, isEmpty) else (bombedBoard, isEmpty)
 
 
+-- Shravan's TODOs: Random tile placement and ending the game once all positions are filled. fix the issue with dissappearing tiles. add random nums list to the game state. change the keys for press. add the new powerups (swap two tiles, don't add a new tile). refactor the code. bomb valid inputs. bomb number cant go below 0
+-- dont add new tile if a move resulted in no tiles changing
+
 -- Event handling function: TODO: clean this up to use case or better pattern matching
+-- need to handle the case where the entire board fills up; need to end game
 keyPress :: Char -> GameState -> GameState
-keyPress 'x' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g}
+keyPress 'x' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
     where
       (b, s) = shiftDown (board g)
-      newB = addTile b
-keyPress 'd' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g}
+      newB = addTile b (take 2 (randNums g))
+      upNums = drop 2 (randNums g)
+keyPress 'd' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
     where
       (b, s) = shiftUp (board g)
-      newB = addTile b
-keyPress 'z' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g}
+      newB = addTile b (take 2 (randNums g))
+      upNums = drop 2 (randNums g)
+keyPress 'z' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
     where
       (b, s) = shiftLeft (board g)
-      newB = addTile b
-keyPress 'c' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g}
+      newB = addTile b (take 2 (randNums g))
+      upNums = drop 2 (randNums g)
+keyPress 'c' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
     where
       (b, s) = shiftRight (board g)
-      newB = addTile b
+      newB = addTile b (take 2 (randNums g))
+      upNums = drop 2 (randNums g)
 
-keyPress 's' g = if currentState g == "startSplash" then GameState {board = board g, score = score g, currentState = "game", bombs = bombs g, bombsInput = bombsInput g} else g
+keyPress 's' g = if currentState g == "startSplash" then GameState {board = board g, score = score g, currentState = "game", bombs = bombs g, bombsInput = bombsInput g, randNums = (randNums g)} else g
 -- Currently only generates a new random board on the first reset but the same board from there on out
-keyPress 'r' g = let newBoard = generateRandomBoard (unsafePerformIO newStdGen) in
-    GameState {board = newBoard, score = 0, currentState = "game", bombs = bombs g, bombsInput = bombsInput g}
+keyPress 'r' g = GameState {board = newBoard, score = 0, currentState = "game", bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
+      where
+        newBoard = generateRandomBoard (take 2 (randNums g))
+        upNums = drop 2 (randNums g)
+
 
 -- FOR TESTING PURPOSES ONLY
-keyPress 'g' g = GameState {board = board g, score = score g, currentState = "gameOver", bombs = bombs g, bombsInput = bombsInput g}
+keyPress 'g' g = GameState {board = board g, score = score g, currentState = "gameOver", bombs = bombs g, bombsInput = bombsInput g, randNums = (randNums g)}
 
 -- TODO: Possible bomb feature with a Dialog or a Brick Form
 keyPress 'b' g = if currentState g == "game" then 
-                    GameState {board = board g, score = score g, currentState = "bombsPage", bombs = bombs g, bombsInput = bombsInput g} else g
+                    GameState {board = board g, score = score g, currentState = "bombsPage", bombs = bombs g, bombsInput = bombsInput g, randNums = (randNums g)} else g
 
-keyPress 'e' g = if currentState g == "bombsPage" then GameState {board = board g, score = score g, currentState = "game", bombs = bombs g, bombsInput = ""} else g
+keyPress 'e' g = if currentState g == "bombsPage" then GameState {board = board g, score = score g, currentState = "game", bombs = bombs g, bombsInput = "", randNums = (randNums g)} else g
 
 keyPress 'n' g = let (bombedBoard, isEmpty) = removeFromBoard (read $ bombsInput g) (board g) in
                     if currentState g == "bombsPage" && (read (bombsInput g) :: Int) <= 32 && not isEmpty then 
-                        GameState {board = bombedBoard , score = score g, currentState = "game", bombs = bombs g - 1, bombsInput = ""} 
-                        else GameState {board = bombedBoard , score = score g, currentState = "game", bombs = bombs g, bombsInput = ""}
+                        GameState {board = bombedBoard , score = score g, currentState = "game", bombs = bombs g - 1, bombsInput = "", randNums = (randNums g)} 
+                        else GameState {board = bombedBoard , score = score g, currentState = "game", bombs = bombs g, bombsInput = "", randNums = (randNums g)}
 
 keyPress key g
-    | currentState g == "bombsPage" && key `elem` ['0'..'9'] = GameState {board = board g, score = score g, currentState = "bombsPage", bombs = bombs g, bombsInput = bombsInput g ++ [key]}
+    | currentState g == "bombsPage" && key `elem` ['0'..'9'] = GameState {board = board g, score = score g, currentState = "bombsPage", bombs = bombs g, bombsInput = bombsInput g ++ [key], randNums = (randNums g)}
     | otherwise = g
 
 
@@ -282,13 +350,13 @@ handleGameEvent e =
         VtyEvent vte ->
             case vte of
                 EvKey (KChar 'q') [] -> halt
-                EvKey (KChar 'd') [] -> modify $ keyPress 'd'
+                EvKey KUp [] -> modify $ keyPress 'd'
                 EvKey (KChar 's') [] -> modify $ keyPress 's'
                 EvKey (KChar 'r') [] -> modify $ keyPress 'r'
                 EvKey (KChar 'g') [] -> modify $ keyPress 'g'
-                EvKey (KChar 'x') [] -> modify $ keyPress 'x'
-                EvKey (KChar 'z') [] -> modify $ keyPress 'z'
-                EvKey (KChar 'c') [] -> modify $ keyPress 'c'
+                EvKey KDown [] -> modify $ keyPress 'x'
+                EvKey KLeft [] -> modify $ keyPress 'z'
+                EvKey KRight [] -> modify $ keyPress 'c'
 
                 -- Bomb events
                 EvKey (KChar 'b') [] -> modify $ keyPress 'b'
