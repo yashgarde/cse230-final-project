@@ -32,7 +32,8 @@ data GameState =
         currentState :: String,
         bombs :: Int,
         bombsInput :: String,
-        randNums :: [Double]
+        randNums :: [Double],
+        tileSkip :: (Bool, Bool)
     }
     deriving (Show, Eq)
 
@@ -59,7 +60,7 @@ buildInitState seed = do
     let randomNums = randoms (mkStdGen seed)
     let vals = take 2 randomNums
     let randomBoard = L.generateRandomBoard vals
-    return GameState {board = randomBoard, score = 0, currentState = "startSplash", bombs = 2, bombsInput = "", randNums = drop 2 randomNums}
+    return GameState {board = randomBoard, score = 0, currentState = "startSplash", bombs = 2, bombsInput = "", randNums = drop 2 randomNums, tileSkip = (True, False)}
 
 
 -- Brick drawing functions
@@ -125,11 +126,7 @@ drawCell val =
     hLimit 10 $ withBorderStyle unicodeRounded $ border $ hCenter $ padAll 1 $ str cellDisp
 
 
--- Shravan's TODOs: Random tile placement and ending the game once all positions are filled. fix the issue with dissappearing tiles. add random nums list to the game state. change the keys for press. add the new powerups (swap two tiles, don't add a new tile). refactor the code. bomb valid inputs. bomb number cant go below 0
--- dont add new tile if a move resulted in no tiles changing
-
 -- Event handling function: TODO: clean this up to use case or better pattern matching
--- need to handle the case where the entire board fills up; need to end game
 keyPress :: Char -> GameState -> GameState
 keyPress 'x' g = shiftAndAddTile L.shiftDown g
 keyPress 'd' g = shiftAndAddTile L.shiftUp g
@@ -147,6 +144,10 @@ keyPress 'r' g = g { board = newBoard, score = 0, currentState = "game", bombsIn
 
 keyPress 'c' g
     | currentState g == "startSplash" = g { currentState = "controls" }
+    | otherwise = g
+
+keyPress 't' g
+    | currentState g == "game" && (fst (tileSkip g)) == True = g { tileSkip = (True, not (snd (tileSkip g))) }
     | otherwise = g
 
 keyPress 'g' g = g { currentState = "gameOver" }
@@ -176,11 +177,13 @@ shiftAndAddTile :: ([[Int]] -> ([[Int]], Int)) -> GameState -> GameState
 shiftAndAddTile shiftFn g =
     if currentState g == "game" then
         let (b, s) = shiftFn (board g)
-            newB = if L.flatten (board g) /= L.flatten b then L.addTile b (take 2 (randNums g)) else b
+            isChanged = L.flatten (board g) /= L.flatten b
+            newB = if isChanged && (not (snd (tileSkip g))) then L.addTile b (take 2 (randNums g)) else b
             upNums = drop 2 (randNums g)
+            newTileSkip = if isChanged && snd (tileSkip g) then (False, False) else (tileSkip g)
         in if L.isGameOver newB (bombs g) then
-            GameState {board = newB, score = s + score g, currentState = "gameOver", bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
-            else GameState {board = newB, score = s + score g, currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
+            g {score = s + score g, currentState = "gameOver", randNums = upNums}
+            else g {board = newB, score = s + score g, currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums, tileSkip = newTileSkip}
     else g
 
 
@@ -194,6 +197,7 @@ handleGameEvent e =
                 EvKey (KChar 's') [] -> modify $ keyPress 's' -- Game start
                 EvKey (KChar 'r') [] -> modify $ keyPress 'r' -- Game reset
                 EvKey (KChar 'c') [] -> modify $ keyPress 'c' -- Controls page
+                EvKey (KChar 't') [] -> modify $ keyPress 't' -- New Tile Skip
 
                 -- Only for testing game over
                 EvKey (KChar 'g') [] -> modify $ keyPress 'g'
