@@ -25,6 +25,7 @@ The game ends when the players board fills up and there are no valid moves for t
 ### Game Board and other screens
 
 - A splash screen upon starting the game to allow the user to start a new game or view the controls.
+
 ![start](assets/start_screen.png)
 
 - An interactive 4x4 game board to play the game on that has displays for the players' current score and an ability to start a new game as necessary.
@@ -34,9 +35,11 @@ The game ends when the players board fills up and there are no valid moves for t
 ![board_played](assets/game_board_played.png)
 
 - Bombs to allow players to clear specific numbers from the board.
+
 ![bombs](assets/bombs.png)
 
 - A running score tracker for the current game score.
+
 ![game_over](assets/game_over.png)
 
 
