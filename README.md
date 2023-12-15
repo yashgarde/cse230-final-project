@@ -32,6 +32,8 @@ The game ends when the players board fills up and there are no valid moves for t
 
 ![board_new](assets/game_board_new.png)
 
+- Tile Skip powerup to allow players to skip the addition of a new tile after the next move that is played.
+
 ![board_played](assets/game_board_played.png)
 
 - Bombs to allow players to clear specific numbers from the board.
