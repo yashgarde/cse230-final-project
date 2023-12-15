@@ -16,7 +16,6 @@ import Brick.Widgets.Border.Style (unicodeRounded, unicodeBold)
 import System.Random ( randomIO, mkStdGen, Random(randoms) )
 
 
-
 game :: IO ()
 game = do
     num <- randomIO
@@ -50,9 +49,26 @@ gameApp =
     , appChooseCursor = neverShowCursor
     , appHandleEvent = handleGameEvent
     , appStartEvent = return ()
-    , appAttrMap = const $ attrMap defAttr []
+    , appAttrMap = const theMap
     }
 
+-- attribute handling
+usedAttr, activatedAttr, deactivatedAttr :: AttrName
+usedAttr = attrName "USED"
+activatedAttr = attrName "ACTIVATED"
+deactivatedAttr = attrName "DEACTIVATED"
+
+stringToAttrName :: String -> AttrName
+stringToAttrName "USED" = usedAttr
+stringToAttrName "ACTIVATED" = activatedAttr
+stringToAttrName "DEACTIVATED" = deactivatedAttr
+
+theMap :: AttrMap
+theMap = attrMap defAttr [
+    (usedAttr, fg red),
+    (activatedAttr, fg green),
+    (deactivatedAttr, fg yellow)
+    ]
 
 -- UI drawing functions
 buildInitState :: Int -> IO GameState
@@ -114,8 +130,13 @@ drawBoard state = [
     hCenter $ vLimit 100 $ hLimit 50 $ withBorderStyle unicodeRounded $ borderWithLabel (padLeftRight 1 $ str "2048+") $
         vBox (map (hCenter . drawBoardRow) (board state)) <=>
         padTopBottom 1 (hCenter $ str $ "💣 left: " ++ show (bombs state)) <=>
+        padTopBottom 1 (hCenter $ str "Tile Skip: " <+> withAttr (stringToAttrName tileSkipStr) (str tileSkipStr)) <=>
         padTop (Pad 2) (hCenter $ str $ "CURRENT SCORE: " ++ show (score state))
-    ]
+    ] where
+        tileSkipStr
+          | not (fst (tileSkip state)) = "USED"
+          | snd (tileSkip state) = "ACTIVATED"
+          | otherwise = "DEACTIVATED"
 
 drawBoardRow :: [Int] -> Widget ResName
 drawBoardRow row = hBox $ map drawCell row
@@ -147,13 +168,13 @@ keyPress 'c' g
     | otherwise = g
 
 keyPress 't' g
-    | currentState g == "game" && (fst (tileSkip g)) == True = g { tileSkip = (True, not (snd (tileSkip g))) }
+    | currentState g == "game" && fst (tileSkip g) = g { tileSkip = (True, not (snd (tileSkip g))) }
     | otherwise = g
 
 keyPress 'g' g = g { currentState = "gameOver" }
 
 keyPress 'b' g
-    | currentState g == "game" && (bombs g) > 0 = g { currentState = "bombsPage" }
+    | currentState g == "game" && bombs g > 0 = g { currentState = "bombsPage" }
     | otherwise = g
 
 keyPress 'e' g
@@ -162,7 +183,7 @@ keyPress 'e' g
     | otherwise = g
 
 keyPress 'n' g
-    | currentState g == "bombsPage" && (read (bombsInput g) :: Int) <= 32 && not isEmpty = if (bombs g - 1) == 0 && (L.isGameOver (board g) 0) then g { currentState = "gameOver" }
+    | currentState g == "bombsPage" && (read (bombsInput g) :: Int) <= 32 && not isEmpty = if (bombs g - 1) == 0 && L.isGameOver (board g) 0 then g { currentState = "gameOver" }
         else g { board = bombedBoard, currentState = "game", bombs = bombs g - 1, bombsInput = "" }
     | otherwise = g { currentState = "game", bombsInput = "" }
     where
@@ -178,9 +199,9 @@ shiftAndAddTile shiftFn g =
     if currentState g == "game" then
         let (b, s) = shiftFn (board g)
             isChanged = L.flatten (board g) /= L.flatten b
-            newB = if isChanged && (not (snd (tileSkip g))) then L.addTile b (take 2 (randNums g)) else b
+            newB = if isChanged && not (snd (tileSkip g)) then L.addTile b (take 2 (randNums g)) else b
             upNums = drop 2 (randNums g)
-            newTileSkip = if isChanged && snd (tileSkip g) then (False, False) else (tileSkip g)
+            newTileSkip = if isChanged && snd (tileSkip g) then (False, False) else tileSkip g
         in if L.isGameOver newB (bombs g) then
             g {score = s + score g, currentState = "gameOver", randNums = upNums}
             else g {board = newB, score = s + score g, currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums, tileSkip = newTileSkip}
