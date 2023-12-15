@@ -184,7 +184,7 @@ keyPress 'e' g
     | otherwise = g
 
 keyPress 'n' g
-    | currentState g == "bombsPage" && (read (bombsInput g) :: Int) <= 32 && not isEmpty = if (bombs g - 1) == 0 && L.isGameOver (board g) 0 then g { currentState = "gameOver" }
+    | currentState g == "bombsPage" && (read (bombsInput g) :: Int) <= 32 && not isEmpty = if (bombs g - 1) == 0 && L.isGameOver (bombedBoard) 0 then g { currentState = "gameOver" }
         else g { board = bombedBoard, currentState = "game", bombs = bombs g - 1, bombsInput = "" }
     | otherwise = g { currentState = "game", bombsInput = "" }
     where
