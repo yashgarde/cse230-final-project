@@ -152,7 +152,7 @@ keyPress 'c' g
 keyPress 'g' g = g { currentState = "gameOver" }
 
 keyPress 'b' g
-    | currentState g == "game" = g { currentState = "bombsPage" }
+    | currentState g == "game" && (bombs g) > 0 = g { currentState = "bombsPage" }
     | otherwise = g
 
 keyPress 'e' g
@@ -161,9 +161,9 @@ keyPress 'e' g
     | otherwise = g
 
 keyPress 'n' g
-    | currentState g == "bombsPage" && (read (bombsInput g) :: Int) <= 32 && not isEmpty =
-        g { board = bombedBoard, currentState = "game", bombs = bombs g - 1, bombsInput = "" }
-    | otherwise = g { board = bombedBoard, currentState = "game", bombsInput = "" }
+    | currentState g == "bombsPage" && (read (bombsInput g) :: Int) <= 32 && not isEmpty = if (bombs g - 1) == 0 && (L.isGameOver (board g) 0) then g { currentState = "gameOver" }
+        else g { board = bombedBoard, currentState = "game", bombs = bombs g - 1, bombsInput = "" }
+    | otherwise = g { currentState = "game", bombsInput = "" }
     where
         (bombedBoard, isEmpty) = L.removeFromBoard (read (bombsInput g) :: Int) (board g)
 
