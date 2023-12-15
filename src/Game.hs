@@ -130,7 +130,7 @@ drawBoard state = [
     hCenter $ vLimit 100 $ hLimit 50 $ withBorderStyle unicodeRounded $ borderWithLabel (padLeftRight 1 $ str "2048+") $
         vBox (map (hCenter . drawBoardRow) (board state)) <=>
         padTopBottom 1 (hCenter $ str $ "💣 left: " ++ show (bombs state)) <=>
-        padTopBottom 1 (hCenter $ str "Tile Skip: " <+> withAttr (stringToAttrName tileSkipStr) (str tileSkipStr)) <=>
+        padTop (Pad 1) (hCenter $ str "Tile Skip: " <+> withAttr (stringToAttrName tileSkipStr) (str tileSkipStr)) <=>
         padTop (Pad 2) (hCenter $ str $ "CURRENT SCORE: " ++ show (score state))
     ] where
         tileSkipStr
