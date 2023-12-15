@@ -72,7 +72,11 @@ buildInitState seed = do
 generateRandomBoard :: [Double] -> [[Int]]
 generateRandomBoard selectedIndices = do
                           let possibleIndices = [0..15]
-                              vals = (map (\x -> ((floor (x * 16)) :: Int)) selectedIndices)
+                              firstVal = (floor ((selectedIndices!!0) * 16))
+                              nextIndices = foldr (++) [] (map (\x -> if x == firstVal then [] else [x]) possibleIndices)
+                              secondIndex = (floor (((drop 1 selectedIndices)!!0) * 15))
+                              secondVal = atIndex nextIndices secondIndex
+                              vals = [firstVal, secondVal]
                               boardVals = map (\x -> if x `elem` vals then 2 else 0) possibleIndices
                               finalBoard = [take 4 boardVals, take 4 $ drop 4 boardVals, take 4 $ drop 8 boardVals, take 4 $ drop 12 boardVals]
                           finalBoard
@@ -213,13 +217,15 @@ zeroIndices b = helper b 0
       helper [] _ = []
       helper (x:xs) num = if x == 0 then num : (helper xs (num + 1)) else (helper xs (num + 1))
 
+atIndex :: [Int] -> Int -> Int
+atIndex [] _ = 0
+atIndex (x:xs) 0 = x
+atIndex (x:xs) n = atIndex xs (n-1)
+
 generateRandomTileLoc :: [Int] -> [Double] -> Int
-generateRandomTileLoc indices vals = helper indices val
+generateRandomTileLoc indices vals = atIndex indices val
     where
       val = (floor ((vals!!0) * (fromIntegral (length indices)))) :: Int
-      helper [] _ = 0
-      helper (x:xs) 0 = x
-      helper (x:xs) n = helper xs (n-1)
 
 
 addTile :: [[Int]] -> [Double] -> [[Int]]
@@ -228,7 +234,7 @@ addTile board rNums = finalBoard
     tileVal = generateRandomTile (take 1 rNums)
     -- tileVal = 2
     -- tileLocation = generateRandomTileLoc (unsafePerformIO newStdGen) board
-    tileLocation = generateRandomTileLoc (flatten board) (take 1 (drop 1 rNums))
+    tileLocation = generateRandomTileLoc (zeroIndices (flatten board)) (take 1 (drop 1 rNums))
     -- finalBoard = insertTile board tileLocation tileVal 
     finalBoard = insertTile board tileLocation tileVal
 
@@ -266,6 +272,15 @@ insertTile board loc val = [take 4 boardVals, take 4 $ drop 4 boardVals, take 4 
       helper (x:xs) 0 = val : xs
       helper (x:xs) n = x : (helper xs (n - 1))
       boardVals = helper (flatten board) loc
+
+  
+isConsecutiveTiles :: [[Int]] -> Bool
+hasConsecutiveTiles board = foldr (||) False helper
+    where
+        helper (e1:(e2:(e3:(e4:[])))) = e1 == e2 || e2 == e3 || e3 == e4 
+
+isGameOver :: [[Int]] -> Bool
+isGameOver board = (hasConsecutiveTiles board) || (hasConsecutiveTiles (transpose board))
   
   
   -- do
@@ -297,22 +312,22 @@ keyPress :: Char -> GameState -> GameState
 keyPress 'x' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
     where
       (b, s) = shiftDown (board g)
-      newB = addTile b (take 2 (randNums g))
+      newB = if (flatten (board g)) /= (flatten b) then addTile b (take 2 (randNums g)) else b
       upNums = drop 2 (randNums g)
 keyPress 'd' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
     where
       (b, s) = shiftUp (board g)
-      newB = addTile b (take 2 (randNums g))
+      newB = if (flatten (board g)) /= (flatten b) then addTile b (take 2 (randNums g)) else b
       upNums = drop 2 (randNums g)
 keyPress 'z' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
     where
       (b, s) = shiftLeft (board g)
-      newB = addTile b (take 2 (randNums g))
+      newB = if (flatten (board g)) /= (flatten b) then addTile b (take 2 (randNums g)) else b
       upNums = drop 2 (randNums g)
 keyPress 'c' g = GameState {board = newB, score = s + (score g), currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
     where
       (b, s) = shiftRight (board g)
-      newB = addTile b (take 2 (randNums g))
+      newB = if (flatten (board g)) /= (flatten b) then addTile b (take 2 (randNums g)) else b
       upNums = drop 2 (randNums g)
 
 keyPress 's' g = if currentState g == "startSplash" then GameState {board = board g, score = score g, currentState = "game", bombs = bombs g, bombsInput = bombsInput g, randNums = (randNums g)} else g
