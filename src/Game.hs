@@ -177,7 +177,7 @@ shiftAndAddTile shiftFn g =
     let (b, s) = shiftFn (board g)
         newB = if L.flatten (board g) /= L.flatten b then L.addTile b (take 2 (randNums g)) else b
         upNums = drop 2 (randNums g)
-    in GameState {board = newB, score = s + score g, currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
+    in if (L.isGameOver newB) then GameState {board = newB, score = s + score g, currentState = "gameOver", bombs = bombs g, bombsInput = bombsInput g, randNums = upNums} else GameState {board = newB, score = s + score g, currentState = currentState g, bombs = bombs g, bombsInput = bombsInput g, randNums = upNums}
 
 
 

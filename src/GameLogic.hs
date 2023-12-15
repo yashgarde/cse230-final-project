@@ -137,13 +137,13 @@ atIndex (_:xs) n = atIndex xs (n-1)
 
 -- Game over checking functions
 
--- isGameOver :: [[Int]] -> Bool
--- isGameOver board = hasConsecutiveTiles board || hasConsecutiveTiles (transpose board)
+isGameOver :: [[Int]] -> Bool
+isGameOver board = not (hasConsecutiveTiles board || hasConsecutiveTiles (transpose board))
 
--- hasConsecutiveTiles :: [[Int]] -> Bool
--- hasConsecutiveTiles board = foldr helper False board
---     where
---         helper [e1, e2, e3, e4] = e1 == e2 || e2 == e3 || e3 == e4
+hasConsecutiveTiles :: [[Int]] -> Bool
+hasConsecutiveTiles board = foldr (||) False (map helper board)
+    where
+        helper [e1, e2, e3, e4] = (e1 == e2) || (e2 == e3) || (e3 == e4)
 
 
 -- numOpenSpots :: [[Int]] -> Int
