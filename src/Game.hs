@@ -73,13 +73,13 @@ drawGame state = case currentState state of
 
 drawStartSplash :: GameState -> [Widget ResName]
 drawStartSplash _ = [
-    hCenter $ vLimit 40 $ hLimit 40 $ withBorderStyle unicodeBold $ borderWithLabel (str "Welcome to 2048+")
-    $ padTop (Pad 1) (vBox [hCenter $ str "Press the \"S\" key to start", hCenter $ str "Press the \"C\" key to view controls"])
+    hCenter $ vLimit 40 $ hLimit 40 $ withBorderStyle unicodeBold $ borderWithLabel (padLeftRight 1 $ str "Welcome to 2048+")
+    $ padTop (Pad 1) (vBox [hCenter $ padLeftRight 1 $ str "Press the \"S\" key to start", hCenter $ padAll 1 $ str "Press the \"C\" key to view controls"])
     ]
 
 drawControls :: GameState -> [Widget ResName]
 drawControls _ = [
-    hCenter $ vLimit 60 $ hLimit 100 $ withBorderStyle unicodeBold $ borderWithLabel (str "2048+ Controls") $ padAll 1 (vBox controlsBlock)
+    hCenter $ vLimit 60 $ hLimit 100 $ withBorderStyle unicodeBold $ borderWithLabel (padLeftRight 1 $ str "2048+ Controls") $ padAll 1 (vBox controlsBlock)
     ]
 
 controlsBlock :: [Widget ResName]
@@ -110,7 +110,7 @@ bombUseBlock state = [hCenter $ str $ "You have " ++ show (bombs state) ++ " ðŸ’
 
 drawBoard :: GameState -> [Widget ResName]
 drawBoard state = [
-    hCenter $ vLimit 100 $ hLimit 50 $ withBorderStyle unicodeRounded $ borderWithLabel (str "2048+") $
+    hCenter $ vLimit 100 $ hLimit 50 $ withBorderStyle unicodeRounded $ borderWithLabel (padLeftRight 1 $ str "2048+") $
         vBox (map (hCenter . drawBoardRow) (board state)) <=>
         padTopBottom 1 (hCenter $ str $ "ðŸ’£ left: " ++ show (bombs state)) <=>
         padTop (Pad 2) (hCenter $ str $ "CURRENT SCORE: " ++ show (score state))
@@ -157,6 +157,7 @@ keyPress 'b' g
 
 keyPress 'e' g
     | currentState g == "bombsPage" = g { currentState = "game", bombsInput = "" }
+    | currentState g == "controls"  = g { currentState = "startSplash" }
     | otherwise = g
 
 keyPress 'n' g
