@@ -102,6 +102,7 @@ drawControls _ = [
 controlsBlock :: [Widget ResName]
 controlsBlock = [hCenter $ str "Use the arrow keys (← → ↑ ↓) to slide the tiles in the respective directions",
                     hCenter $ str "Press the \"B\" key for the bomb 💣 powerup",
+                    hCenter $ str "Press the \"T\" key to toggle the Tile Skip powerup",
                     hCenter $ str "Press the \"R\" key to restart the game",
                     hCenter $ str "Press the \"ESC\" key to return to the game"]
 

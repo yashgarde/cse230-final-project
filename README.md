@@ -61,7 +61,7 @@ We divided the game's source code into separate modules for readability:
 This file contains all the code relating to the `brick` library. This includes:
 
 - The definition of the Game's state: This include the board, the current screen the game is on, the current score, number of bombs etc.
-- Definition of the attributes used to color certain portions of the game. Currently this is restricted to the Tile Skip powerup but can be easily expanded to other features of the game.
+- Definition of the attributes used to color certain portions of the game. Currently this is restricted to the **Tile Skip** powerup but can be easily expanded to other features of the game.
 - Drawing the start splash screen, game board and bomb use UI's that are a part of the game
 - Event handling functions to execute the relevant code based on the input provided by the user.
 
