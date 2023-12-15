@@ -148,7 +148,7 @@ drawCell val =
     hLimit 10 $ withBorderStyle unicodeRounded $ border $ hCenter $ padAll 1 $ str cellDisp
 
 
--- Event handling function: TODO: clean this up to use case or better pattern matching
+-- Event handling function
 keyPress :: Char -> GameState -> GameState
 keyPress 'x' g = shiftAndAddTile L.shiftDown g
 keyPress 'd' g = shiftAndAddTile L.shiftUp g
