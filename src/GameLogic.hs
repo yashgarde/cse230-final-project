@@ -137,7 +137,7 @@ atIndex (_:xs) n = atIndex xs (n-1)
 -- Game over checking functions
 
 isGameOver :: [[Int]] -> Int -> Bool
-isGameOver board bombs = (not (hasZeros board)) && not (hasConsecutiveTiles board || hasConsecutiveTiles (transpose board)) && bombs == 0
+isGameOver board bombs = not (hasZeros board) && not (hasConsecutiveTiles board || hasConsecutiveTiles (transpose board)) && bombs == 0
 
 hasConsecutiveTiles :: [[Int]] -> Bool
 hasConsecutiveTiles board = foldr (||) False (map helper board)
@@ -145,7 +145,7 @@ hasConsecutiveTiles board = foldr (||) False (map helper board)
         helper [e1, e2, e3, e4] = (e1 == e2) || (e2 == e3) || (e3 == e4)
 
 hasZeros :: [[Int]] -> Bool
-hasZeros board = elem 0 (flatten board)
+hasZeros board = 0 `elem` flatten board
 
 
 -- Bomb feature functions
