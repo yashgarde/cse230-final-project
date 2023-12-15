@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Eta reduce" #-}
@@ -58,7 +57,7 @@ insertTile :: [[Int]] -> Int -> Int -> [[Int]]
 insertTile board loc val = [take 4 boardVals, take 4 $ drop 4 boardVals, take 4 $ drop 8 boardVals, take 4 $ drop 12 boardVals]
     where
       helper [] _ = []
-      helper (x:xs) 0 = val : xs
+      helper (_:xs) 0 = val : xs
       helper (x:xs) n = x : helper xs (n - 1)
       boardVals = helper (flatten board) loc
 
@@ -137,8 +136,8 @@ atIndex (_:xs) n = atIndex xs (n-1)
 
 -- Game over checking functions
 
-isGameOver :: [[Int]] -> Bool
-isGameOver board = not (hasConsecutiveTiles board || hasConsecutiveTiles (transpose board))
+isGameOver :: [[Int]] -> Int -> Bool
+isGameOver board bombs = not (hasConsecutiveTiles board || hasConsecutiveTiles (transpose board)) && bombs == 0
 
 hasConsecutiveTiles :: [[Int]] -> Bool
 hasConsecutiveTiles board = foldr (||) False (map helper board)
@@ -146,8 +145,6 @@ hasConsecutiveTiles board = foldr (||) False (map helper board)
         helper [e1, e2, e3, e4] = (e1 == e2) || (e2 == e3) || (e3 == e4)
 
 
--- numOpenSpots :: [[Int]] -> Int
--- numOpenSpots board = numZeros (flatten board)
 
 -- Bomb feature functions
 removeFromBoard :: Int -> [[Int]] -> ([[Int]], Bool)
