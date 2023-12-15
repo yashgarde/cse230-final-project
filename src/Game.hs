@@ -159,7 +159,7 @@ keyPress 's' g
     | currentState g == "startSplash" = g { currentState = "game" }
     | otherwise = g
 
-keyPress 'r' g = g { board = newBoard, score = 0, currentState = "game", bombsInput = "", randNums = upNums }
+keyPress 'r' g = g { board = newBoard, score = 0, currentState = "game", bombsInput = "", randNums = upNums, bombs = 2, tileSkip = (True, False) }
     where
         newBoard = L.generateRandomBoard (take 2 (randNums g))
         upNums = drop 2 (randNums g)
