@@ -83,6 +83,6 @@ cabal run
 
 ## Source Code References
 
-- Repository: [https://github.com/8Gitbrix/2048Haskell](https://github.com/8Gitbrix/2048Haskell)
+- Inspiration Repository: [https://github.com/8Gitbrix/2048Haskell](https://github.com/8Gitbrix/2048Haskell)
   - Referenced the `drawGrid` function in the `HumanGame.hs` file for the board. Ended up implementing it in a different way
 - All other features, powerups, screens and event handling was written independently with the help of [Hoogle](https://hoogle.haskell.org/) and the Brick [documentation](https://github.com/jtdaugherty/brick/blob/master/docs/guide.rst)
